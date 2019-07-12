@@ -18,6 +18,7 @@
 package sernet.gs.ui.rcp.main;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.eclipse.core.runtime.IExtension;
 import org.eclipse.jface.action.Action;
@@ -35,10 +36,10 @@ import org.eclipse.jface.action.ToolBarContributionItem;
 import org.eclipse.jface.action.ToolBarManager;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.ui.IPerspectiveDescriptor;
-import org.eclipse.ui.IPerspectiveListener;
 import org.eclipse.ui.IWorkbenchActionConstants;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PerspectiveAdapter;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.actions.ActionFactory;
 import org.eclipse.ui.actions.ActionFactory.IWorkbenchAction;
@@ -79,9 +80,9 @@ import sernet.gs.ui.rcp.main.bsi.views.TodoView;
 import sernet.gs.ui.rcp.main.preferences.PreferenceConstants;
 import sernet.gs.ui.rcp.main.preferences.ShowPreferencesAction;
 import sernet.verinice.bp.rcp.BaseProtectionView;
+import sernet.verinice.bp.rcp.converter.ItNetworkConverterAction;
 import sernet.verinice.bpm.rcp.OpenTaskViewAction;
 import sernet.verinice.interfaces.ActionRightIDs;
-import sernet.verinice.iso27k.rcp.CatalogView;
 import sernet.verinice.iso27k.rcp.ISMView;
 import sernet.verinice.iso27k.rcp.Iso27kPerspective;
 import sernet.verinice.iso27k.rcp.action.ImportPersonFromLdap;
@@ -90,6 +91,7 @@ import sernet.verinice.rcp.ServerConnectionToggleAction;
 import sernet.verinice.rcp.account.AccountView;
 import sernet.verinice.rcp.accountgroup.AccountGroupView;
 import sernet.verinice.rcp.bp.BaseProtectionPerspective;
+import sernet.verinice.rcp.catalog.CatalogView;
 import sernet.verinice.rcp.risk.RiskAnalysisAction;
 import sernet.verinice.report.rcp.ReportDepositView;
 import sernet.verinice.validation.CnAValidationView;
@@ -153,8 +155,6 @@ public class ApplicationActionBarAdvisor extends ActionBarAdvisor {
 
     private OpenMultipleViewAction openSearchViewAction;
 
-    private OpenMultipleViewAction openCatalogAction;
-
     private OpenTaskViewAction openTaskViewAction;
 
     private OpenViewAction openAccountViewAction;
@@ -185,6 +185,8 @@ public class ApplicationActionBarAdvisor extends ActionBarAdvisor {
 
     private ImportPersonFromLdap importPersonFromLdap;
 
+    private ItNetworkConverterAction itNetworkConverterAction;
+
     private OpenViewAction openDocumentViewAction;
 
     private ImportGstoolNotesAction importGSNotesAction;
@@ -208,12 +210,7 @@ public class ApplicationActionBarAdvisor extends ActionBarAdvisor {
     @SuppressWarnings(WARNING_RESTRICTION)
     @Override
     protected void makeActions(final IWorkbenchWindow window) {
-        window.addPerspectiveListener(new IPerspectiveListener() {
-
-            @Override
-            public void perspectiveChanged(IWorkbenchPage page, IPerspectiveDescriptor perspective,
-                    String arg2) {
-            }
+        window.addPerspectiveListener(new PerspectiveAdapter() {
 
             @Override
             public void perspectiveActivated(IWorkbenchPage page,
@@ -254,9 +251,6 @@ public class ApplicationActionBarAdvisor extends ActionBarAdvisor {
                 NoteView.ID, ImageCache.VIEW_NOTE, ActionRightIDs.NOTES);
         this.openFileAction = new OpenViewAction(window, Messages.ApplicationActionBarAdvisor_2,
                 FileView.ID, ImageCache.ATTACH, ActionRightIDs.FILES);
-        this.openCatalogAction = new OpenMultipleViewAction(window,
-                Messages.ApplicationActionBarAdvisor_3, CatalogView.ID, ImageCache.WRENCH,
-                ActionRightIDs.ISMCATALOG);
         this.openRelationViewAction = new OpenViewAction(window,
                 Messages.ApplicationActionBarAdvisor_4, RelationView.ID, ImageCache.LINKS,
                 ActionRightIDs.RELATIONS);
@@ -301,6 +295,7 @@ public class ApplicationActionBarAdvisor extends ActionBarAdvisor {
                 Messages.ApplicationActionBarAdvisor_32);
         this.importGSNotesAction = new ImportGstoolNotesAction(window,
                 Messages.ApplicationActionBarAdvisor_27);
+        this.itNetworkConverterAction = new ItNetworkConverterAction(window);
         this.showPreferencesAction = new ShowPreferencesAction();
         this.bulkEditAction = new ShowBulkEditAction(window,
                 Messages.ApplicationActionBarAdvisor_16);
@@ -326,26 +321,24 @@ public class ApplicationActionBarAdvisor extends ActionBarAdvisor {
         this.introAction = ActionFactory.INTRO.create(window);
 
         this.openCatalogViewAction = new OpenViewAction(window,
-                Messages.ApplicationActionBarAdvisor_CatalogView,
-                sernet.verinice.rcp.catalog.CatalogView.ID, ImageCache.VIEW_CATALOG,
-                ActionRightIDs.CATALOGVIEW);
+                Messages.ApplicationActionBarAdvisor_CatalogView, CatalogView.ID,
+                ImageCache.VIEW_CATALOG, ActionRightIDs.CATALOGVIEW);
 
-        IAction actions[] = new IAction[] { this.exitAction, this.copyAction, this.pasteAction,
-                this.aboutAction, this.newWindowAction, this.saveAction, this.saveAsAction,
-                this.closeAction, this.closeAllAction, this.closeOthersAction,
-                this.openBSIBrowserAction, this.openNoteAction, this.openFileAction,
-                this.openCatalogAction, this.openRelationViewAction, this.openBSIViewAction,
-                this.openBSIModelViewAction, this.openISMViewAction, this.openTodoViewAction,
-                this.openAuditViewAction, this.openTaskViewAction, this.openValidationViewAction,
-                this.reloadAction, this.importGstoolAction, this.importCSVAction,
-                this.importPersonFromLdap, this.importGSNotesAction, this.showPreferencesAction,
-                this.bulkEditAction, this.runRiskAnalysisAction, this.accessControlEditAction,
-                this.profileEditAction, this.konsolidatorAction, gsmbasicsecuritycheckAction,
-                bausteinZuordnungAction, gsmbausteinZuordnungAction, this.openDocumentViewAction,
-                this.introAction, this.openGroupViewAction, this.openReportdepositViewAction,
-                this.openSearchViewAction, this.openGSToolMappingViewAction, this.openBpViewAction,
-                this.openCatalogViewAction };
-        registerActions(actions);
+        Stream.of(this.exitAction, this.copyAction, this.pasteAction, this.aboutAction,
+                this.newWindowAction, this.saveAction, this.saveAsAction, this.closeAction,
+                this.closeAllAction, this.closeOthersAction, this.openBSIBrowserAction,
+                this.openNoteAction, this.openFileAction, this.openRelationViewAction,
+                this.openBSIViewAction, this.openBSIModelViewAction, this.openISMViewAction,
+                this.openTodoViewAction, this.openAuditViewAction, this.openTaskViewAction,
+                this.openValidationViewAction, this.reloadAction, this.importGstoolAction,
+                this.importCSVAction, this.importPersonFromLdap, this.importGSNotesAction,
+                this.showPreferencesAction, this.bulkEditAction, this.runRiskAnalysisAction,
+                this.accessControlEditAction, this.profileEditAction, this.konsolidatorAction,
+                gsmbasicsecuritycheckAction, bausteinZuordnungAction, gsmbausteinZuordnungAction,
+                this.openDocumentViewAction, this.introAction, this.openGroupViewAction,
+                this.openReportdepositViewAction, this.openSearchViewAction,
+                this.openGSToolMappingViewAction, this.openBpViewAction, this.openCatalogViewAction)
+                .forEach(this::register);
 
         Optional.ofNullable(window.getActivePage()).map(IWorkbenchPage::getPerspective)
                 .ifPresent(this::enableOrDisableActionsForPerspective);
@@ -357,12 +350,6 @@ public class ApplicationActionBarAdvisor extends ActionBarAdvisor {
         openAuditViewAction.setEnabled(isOldBpPerspective);
         openTodoViewAction.setEnabled(isOldBpPerspective);
         runRiskAnalysisAction.setEnabled(!isOldBpPerspective);
-    }
-
-    private void registerActions(IAction[] actions) {
-        for (IAction action : actions) {
-            register(action);
-        }
     }
 
     @Override
@@ -394,8 +381,7 @@ public class ApplicationActionBarAdvisor extends ActionBarAdvisor {
         if (url != null && !url.isEmpty()) {
             if (url.startsWith("http://")) { //$NON-NLS-1$
                 url = url.substring(httpURLLength);
-            }
-            if (url.startsWith("https://")) { //$NON-NLS-1$
+            } else if (url.startsWith("https://")) { //$NON-NLS-1$
                 url = url.substring(httpsURLLength);
             }
         }
@@ -480,7 +466,6 @@ public class ApplicationActionBarAdvisor extends ActionBarAdvisor {
         // ISM
 
         viewsMenu.add(this.openISMViewAction);
-        viewsMenu.add(this.openCatalogAction);
         viewsMenu.add(new Separator(IWorkbenchActionConstants.MB_ADDITIONS));
         // marker for including views from samt-plugin
 
@@ -566,6 +551,7 @@ public class ApplicationActionBarAdvisor extends ActionBarAdvisor {
 
         myToolbar.add(this.reloadAction);
         myToolbar.add(this.runRiskAnalysisAction);
+        myToolbar.add(this.itNetworkConverterAction);
         myToolbar.add(new Separator());
         // Grundschutz items
         myToolbar.add(this.openBSIViewAction);
